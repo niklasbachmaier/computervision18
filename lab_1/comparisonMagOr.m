@@ -41,7 +41,7 @@ colormap(hsv)
 colorbar
 
 subplot(2,5,8)
-quiver(pn1Or, pn1Mag)
+quiver(imread([],[],pn1Or, pn1Mag)
 set(gca,'YDir','reverse')
 
 subplot(2,5,9)
