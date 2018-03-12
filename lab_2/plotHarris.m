@@ -5,7 +5,7 @@ I = imread(im);
 
 [r,c] = harris(im, sigma);
 
-pos = [r,c];
+pos = [c,r];
 
 I = insertMarker(I,pos,'o','color','yellow','size',1);
 

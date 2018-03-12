@@ -31,16 +31,16 @@ det = M(:,:,1).* M(:,:,2) - M(:,:,3).^2;
 R = det - k * trace.^2;
 
 % Set the threshold 
-threshold = 0.5e-19;
+threshold = 0.01*max(max(R));
 
 % Find local maxima
 % Dilation will alter every pixel except local maxima in a 3x3 square area.
 % Also checks if R is above threshold
 R = ((R>threshold) & ((imdilate(R, strel('square', 3))==R)));  %.* sigma;
 
-% Display corners
-figure
-imshow(R,[]);
+% Display corners 
+%figure
+%imshow(R,[]);
 
 % Return the coordinates
 [r,c] = find(R);
