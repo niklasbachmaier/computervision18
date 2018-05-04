@@ -49,10 +49,10 @@ else
     fprintf('Derivative type not supported\n'); 
 end
 
-%if test mode show image
-if strcmp(test,'t')
-    imshow(F)
-end
+% %if test mode show image
+% if strcmp(test,'t')
+%     imshow(F)
+% end
 
 
 end

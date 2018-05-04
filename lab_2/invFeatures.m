@@ -63,12 +63,15 @@ for i = 1:size(sigmas,2)
     
     for p = 1:size(r,1)
         
-        %look up lapl value and compare it to the max over all values
-        if lapl(r(p),c(p),i) >= max(laplmax(r(p),c(p),:))
-            %add point to final points
-            inv_feat = cat(1,inv_feat,[r(p),c(p)]);
-        else 
-            discardedpoints = discardedpoints + 1;
+        %try to find the sigma where the Laplacian for the keypoint has a
+        %local maximum; if there is no local maximum (monotonically
+        %increasing or decreasing function, discard the feature point
+        for s = 2:(size(sigmas,2)-1)
+        
+            if lapl(r(p),c(p),s) == laplmax(r(p),c(p),s) && lapl(r(p),c(p),s) > laplmax(r(p),c(p),s-1) && lapl(r(p),c(p),s) > laplmax(r(p),c(p),s+1)
+                %add point to final points
+                inv_feat = cat(2,inv_feat,[r(p);c(p);sigmas(s)]);
+            end
         end
         
     end
