@@ -1,0 +1,12 @@
+%this script extracts the feature points of all castle images and creates
+%workspace variables
+
+for i=1:19
+    
+    file_path = sprintf('model_castle/%d.JPG',i);
+    
+    im = imread(file_path);
+    im = im2single(im);
+    
+    
+end
