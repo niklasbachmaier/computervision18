@@ -68,67 +68,144 @@ end
 
 
 %% non-normalized eight-point algo
-%pick 8 random matches to ensure that matches are well distributed 
-point_ind = randsample(length(matches_r),8);
+f1_m = f1(:,matches_r(1,:));
+f2_m = f2(:,matches_r(2,:));
 
-eightp_m = matches_r(:,point_ind);
+A = build_A(f1_m, f2_m);
 
-eightp_1 = f1(:,eightp_m(1,:));
-eightp_2 = f2(:,eightp_m(2,:));
+F = get_F(A);
 
-%construct the A matrix, x is im1 and x' is im2 (referring to manual
-%notation)
-x_1 = eightp_1(1,:);
-y_1 = eightp_1(2,:);
-x_2 = eightp_2(1,:);
-y_2 = eightp_2(2,:);
+%% display epipolar lines for a point with non-normalized eight_point algo
 
-A = [];
-for i=1:8
+% %pick a random point from matches_r
+% m_rand = matches_r(:,randsample(length(matches_r),1));
+% 
+% epiLine = epipolarLine(F,[f1(1,m_rand(1)),f1(2,m_rand(1))]);
+% points = lineToBorderPoints(epiLine,size(im2));
+% 
+% figure
+% title(sprintf('Matching point in %s',img1))
+% imshow(im1)
+% hold on
+% plot(f1(1,m_rand(1)),f1(2,m_rand(1)),'r*')
+% 
+% figure
+% title(sprintf('Matching point and epipolar line in %s',img2))
+% imshow(im2)
+% hold on
+% plot(f2(1,m_rand(2)),f2(2,m_rand(2)),'r*')
+% line(points([1,3]),points([2,4]));
+
+%% normalized eight-point algo with RANSAC
+%first normalize the matching points from f1 and f2 to zero mean and 
+%average distance sqrt(2)
+
+%do it for f1
+[f1_m_xnorm, f1_m_ynorm, T_1] = norm_points(f1_m(1,:), f1_m(2,:));
+f1_m_norm = [f1_m_xnorm; f1_m_ynorm];
+
+%do it for f2
+[f2_m_xnorm, f2_m_ynorm, T_2] = norm_points(f2_m(1,:), f2_m(2,:));
+f2_m_norm = [f2_m_xnorm; f2_m_ynorm];
+
+%construct the A matrix
+A_norm = build_A(f1_m_norm,f2_m_norm);
+
+F_norm = get_F(A_norm);
+
+%denormalize
+F_denorm = T_2.'*F_norm*T_1;
+
+%% display epipolar lines for a point with normalized eight_point algo
+
+% %pick a random point from matches_r
+% m_rand = matches_r(:,randsample(length(matches_r),1));
+% 
+% epiLine = epipolarLine(F_denorm,[f1(1,m_rand(1)),f1(2,m_rand(1))]);
+% points = lineToBorderPoints(epiLine,size(im2));
+% 
+% figure
+% title(sprintf('Matching point in %s, norm algo',img1))
+% imshow(im1)
+% hold on
+% plot(f1(1,m_rand(1)),f1(2,m_rand(1)),'r*')
+% 
+% figure
+% title(sprintf('Matching point and epipolar line in %s, norm algo',img2))
+% imshow(im2)
+% hold on
+% plot(f2(1,m_rand(2)),f2(2,m_rand(2)),'r*')
+% line(points([1,3]),points([2,4]));
+
+%% normalized eight-point algo with RANSAC
+
+num_iter = 50;
+thresh = 3000;
+
+F_best = [];
+num_inliers_best = 0;
+
+f1_m_hom = [f1_m(1,:);f1_m(2,:); ones(1, length(f1_m))];
+f2_m_hom = [f2_m(1,:);f2_m(2,:); ones(1, length(f2_m))];
+
+for i=1:num_iter
     
-    l = [x_1(i)*x_2(i) x_1(i)*y_2(i) x_1(i) y_1(i)*x_2(i) y_1(i)*y_2(i) ...
-        y_1(i) x_2(i) y_2(i) 1];
-    A = [A;l];
+    %construct the A matrix, build_A selects 8 random matches
+    A_norm_i = build_A(f1_m_norm,f2_m_norm);
+    F_norm_i = get_F(A_norm_i);
+
+    %denormalize
+    F_denorm_i = T_2.'*F_norm_i*T_1;
+    
+    %find number of inliers with this F
+    num_inliers_i = 0;
+    
+    d_tot_s = 0;
+    
+    for s=1:length(f1_m_hom)
+        
+        F_ps = F_denorm_i * f1_m_hom(:,s);
+        F_T_ps = F_denorm_i.' * f1_m_hom(:,s);
+        
+        d_s = (f2_m_hom(:,s).'*F_denorm_i*f1_m_hom(:,s))^2 / ...
+            (F_ps(1)^2 + F_ps(2)^2 + F_T_ps(1)^2 + F_T_ps(2)^2);
+        
+        if d_s < thresh 
+            num_inliers_i = num_inliers_i + 1;
+        end
+        
+    end
+    
+    %if the number of inliers is greater than the number of inliers of the
+    %best F found before, we save this F as the new best one
+    if num_inliers_i > num_inliers_best
+        F_best = F_denorm_i; 
+    end
+    
     
 end
 
-[U,S,V] = svd(A);
-
-%the smallest singular value is in the 8th column of V, because the
-%singular values are ordered from big to small (from left to right), but
-%there are only 8 singular values (matrix A only rank 8)
-F_c = V(:,8);
-
-F = [F_c(1) F_c(2) F_c(3); F_c(4) F_c(5) F_c(6); F_c(7) F_c(8) F_c(9)].';
-
-%enforce the singularity of F: set smallest singular value (=third value in
-%third column, because values ordered) to zero
-[U_f,S_f,V_f] = svd(F);
-
-S_f(3,3) = 0;
-
-F = U_f .* S_f .* V_f.';
-
-%% display epipolar lines for a point
+%% display epipolar lines for a point with normalized eight_point algo with RANSAC
 
 %pick a random point from matches_r
 m_rand = matches_r(:,randsample(length(matches_r),1));
 
-epiLine = epipolarLine(F,[f1(1,m_rand(1)),f1(2,m_rand(1))]);
+epiLine = epipolarLine(F_best,[f1(1,m_rand(1)),f1(2,m_rand(1))]);
 points = lineToBorderPoints(epiLine,size(im2));
 
 figure
-title(sprintf('Matching point in %s',img1))
+title(sprintf('Matching point in %s, norm algo',img1))
 imshow(im1)
 hold on
 plot(f1(1,m_rand(1)),f1(2,m_rand(1)),'r*')
 
 figure
-title(sprintf('Matching point and epipolar line in %s',img2))
+title(sprintf('Matching point and epipolar line in %s, norm algo',img2))
 imshow(im2)
 hold on
 plot(f2(1,m_rand(2)),f2(2,m_rand(2)),'r*')
 line(points([1,3]),points([2,4]));
 
-%% normalized eight-point algo with RANSAC
+
+
 

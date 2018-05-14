@@ -18,7 +18,7 @@ close all
 
 
 % % %load points
-Points = textread('model house\measurement_matrix.txt');
+Points = textread('measurement_matrix.txt');
 % % %Shift the mean of the points to zero using "repmat" command
 shifted_points= Points-repmat(mean(Points,2),1,215);
 
