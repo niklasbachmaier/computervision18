@@ -71,13 +71,24 @@ end
 f1_m = f1(:,matches_r(1,:));
 f2_m = f2(:,matches_r(2,:));
 
+% try plot
+% figure
+% imshow(im1)
+% hold on
+% plot(f1_m(1,500),f1_m(2,500),'r*')
+% 
+% figure
+% imshow(im2)
+% hold on
+% plot(f2_m(1,500),f2_m(2,500),'r*')
+
 A = build_A(f1_m, f2_m);
 
 F = get_F(A);
 
 %% display epipolar lines for a point with non-normalized eight_point algo
 
-% %pick a random point from matches_r
+%pick a random point from matches_r
 % m_rand = matches_r(:,randsample(length(matches_r),1));
 % 
 % epiLine = epipolarLine(F,[f1(1,m_rand(1)),f1(2,m_rand(1))]);
@@ -139,14 +150,16 @@ F_denorm = T_2.'*F_norm*T_1;
 
 %% normalized eight-point algo with RANSAC
 
-num_iter = 50;
-thresh = 3000;
+num_iter = 400;
+thresh = 50;
 
 F_best = [];
 num_inliers_best = 0;
 
 f1_m_hom = [f1_m(1,:);f1_m(2,:); ones(1, length(f1_m))];
 f2_m_hom = [f2_m(1,:);f2_m(2,:); ones(1, length(f2_m))];
+
+points_8pr = [];
 
 for i=1:num_iter
     
@@ -162,6 +175,8 @@ for i=1:num_iter
     
     d_tot_s = 0;
     
+    points_8pr_i = [];
+    
     for s=1:length(f1_m_hom)
         
         F_ps = F_denorm_i * f1_m_hom(:,s);
@@ -172,6 +187,9 @@ for i=1:num_iter
         
         if d_s < thresh 
             num_inliers_i = num_inliers_i + 1;
+            
+            %also collect the final matches 
+            points_8pr_i = [[f1_m(1,s); f1_m(2,s); f2_m(1,s); f2_m(2,s)], points_8pr_i];
         end
         
     end
@@ -180,30 +198,31 @@ for i=1:num_iter
     %best F found before, we save this F as the new best one
     if num_inliers_i > num_inliers_best
         F_best = F_denorm_i; 
+        num_inliers_best = num_inliers_i;
+        points_8pr = points_8pr_i;
     end
-    
     
 end
 
 %% display epipolar lines for a point with normalized eight_point algo with RANSAC
 
 %pick a random point from matches_r
-m_rand = matches_r(:,randsample(length(matches_r),1));
+m_rand = randsample(length(points_8pr),1);
 
-epiLine = epipolarLine(F_best,[f1(1,m_rand(1)),f1(2,m_rand(1))]);
+epiLine = epipolarLine(F_best,[points_8pr(1,m_rand(1)),points_8pr(2,m_rand(1))]);
 points = lineToBorderPoints(epiLine,size(im2));
 
 figure
 title(sprintf('Matching point in %s, norm algo',img1))
 imshow(im1)
 hold on
-plot(f1(1,m_rand(1)),f1(2,m_rand(1)),'r*')
+plot(points_8pr(1,m_rand),points_8pr(2,m_rand),'r*')
 
 figure
 title(sprintf('Matching point and epipolar line in %s, norm algo',img2))
 imshow(im2)
 hold on
-plot(f2(1,m_rand(2)),f2(2,m_rand(2)),'r*')
+plot(points_8pr(3,m_rand),points_8pr(4,m_rand),'r*')
 line(points([1,3]),points([2,4]));
 
 

@@ -7,7 +7,7 @@ points = [x_coord; y_coord];
 sum_elem = sum(points,2);
 m_x = (1/length(points)) * sum_elem(1);
 m_y = (1/length(points)) * sum_elem(2);
-d = sum(sqrt(((points(1,:) - m_x).^2 + (points(2,:) - m_y).^2)));
+d = (1/length(points))*sum(sqrt(((points(1,:) - m_x).^2 + (points(2,:) - m_y).^2)));
 
 T = [sqrt(2)/d 0 -m_x*sqrt(2)/d; 0 sqrt(2)/d -m_y*sqrt(2)/d; 0 0 1];
 
