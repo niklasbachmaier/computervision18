@@ -32,7 +32,7 @@ for i=1:19
     if mod(i,19) == 0 
         im_2 = 1;
     else
-        im_2 = i;
+        im_2 = i + 1;
     end
     
     matches{i} = vl_ubcmatch(cell2mat(descriptors(im_1)),cell2mat(descriptors(im_2)));
@@ -53,12 +53,12 @@ thresh = 40000;
 
 for i=1:19
     
-    im_1 = i;
+    im_1 = i
     %important for the wraparound case 19-1
     if mod(i,19) == 0 
-        im_2 = 1;
+        im_2 = 1
     else
-        im_2 = i;
+        im_2 = i + 1
     end
     
     p1 = cell2mat(frames(im_1));
