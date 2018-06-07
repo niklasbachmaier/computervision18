@@ -33,7 +33,7 @@ for j = 1:length(matches_prev_image)
         end
 end
 
-for y=[19 18 17 16 15 14 13]
+for y=[19:1]
 matches_image=cell2mat(matches_8pr(y-1));
 matches_prev_image= PT_matrix(y,:);
 for j = 1:length(matches_prev_image)
@@ -46,7 +46,31 @@ for j = 1:length(matches_prev_image)
 end
 end
 
-      
+%%
+[a b c]=intersect(PT_matrix(19,:),PT_matrix(19,:));
+for j = 2000:length(PT_matrix)
+    for z =1:length(a)
+        if PT_matrix(19,j) == a(z)
+           PT_matrix(:,j)=[];
+end 
+    end
+end
+%% get actual point coordinates from PT matrix
+XY_PT_matrix=[];
+for i = 1:19
+    for j =1:length(PT_matrix)
+        points= frames{1,i};
+        if PT_matrix(i,j) ~= 0
+            
+           XY_PT_matrix(i+i-1:i+i,j)= points(1:2,PT_matrix(i,j));
+           
+    else 
+        
+XY_PT_matrix(i+i-1:i+i,j)= [0;0];
+
+    end
+    end
+end
         
         
     
