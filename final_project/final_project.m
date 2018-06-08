@@ -53,12 +53,12 @@ thresh = 40000;
 
 for i=1:19
     
-    im_1 = i
+    im_1 = i;
     %important for the wraparound case 19-1
     if mod(i,19) == 0 
-        im_2 = 1
+        im_2 = 1;
     else
-        im_2 = i + 1
+        im_2 = i + 1;
     end
     
     p1 = cell2mat(frames(im_1));
@@ -72,8 +72,61 @@ for i=1:19
     
 end
 
-%% build the point-view matrix
+%% build the point-view matrix and the matrix with XY points
 
+%point_view matrix only has the indices of the points in the frames
+%structure
+PT_matrix = getPointView(matches_8pr);
+
+XY_matrix = getXY(PT_matrix, frames);
+
+%% try out stuff
+
+start_frame = 19;
+end_frame = 21; %use three consecutive frames
+    
+%indices gives the locations of the points contained in submatrix in
+%the original XY_matrix
+[submatrix, indices] = FindTrackablePoints(XY_matrix,start_frame,end_frame,19);
+    
+%do structure from motion 
+points_3D = StructureFromMotion(submatrix);
+
+%% extract subblocks and do structure from motion
+
+%do it for three consecutive frames
+
+%build a point-viewset matrix for the 19 viewsets (1-2-3, 2-3-4, ...,
+%19-1-2)
+point_viewset = zeros(19*3, length(XY_matrix));
+
+for i=1:19
+    
+    start_frame = i;
+    end_frame = i + 2; %use three consecutive frames; case end_frame > num_frame handled in FindTrackablePoints
+    
+    %indices gives the locations of the points contained in submatrix in
+    %the original XY_matrix
+    [submatrix, indices] = FindSubBlocks(XY_matrix,start_frame,end_frame,19);
+    
+    %do structure from motion 
+    points_3D = StructureFromMotion(submatrix);
+    
+    %start index for adding to point_viewset
+    s = i + (2*(i-1));
+    
+    %put the points in the point_viewset matrix
+    for m=1:length(indices)
+  
+        point_viewset(s:s+2,indices(m)) = points_3D(:,m);
+        
+    end
+    
+end
+
+
+%% use procrustes to transform all 3D points to 1 coord system
+%reference coordinate system is the one of the first set (views 1-2-3)
 
 
 

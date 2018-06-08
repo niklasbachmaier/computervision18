@@ -13,11 +13,11 @@
 %- M: The transformation matrix size of 2nx3. Where n is the number of 
 %     cameras i.e. images.
 %- S: The estimated 3-dimensional locations of the points (3x#points)
-function [3DPoints] = demo3(2DPoints)
+function [Points_3D] = StructureFromMotion(Points_2D)
 % % %load points
-Points = 2DPoints;
+Points = Points_2D;
 % % %Shift the mean of the points to zero using "repmat" command
-shifted_points= Points-repmat(mean(Points,2),1,length(Points);
+shifted_points= Points-repmat(mean(Points,2),1,length(Points));
 
 % % %singular value decomposition
 [U,W,V] = svd(shifted_points);
@@ -29,8 +29,6 @@ V = V(:,1:3);
 M = U*sqrt(W);
 S1 = sqrt(W)*V';
 
-save('M','M')
-
 % % %solve for affine ambiguity
 A=[M(1,:);M(2,:);M(3,:)];
 L0=eye(3)/pinv(A*A');
@@ -38,10 +36,9 @@ L0=eye(3)/pinv(A*A');
 % Solve for L
 L = lsqnonlin(@myfun,L0);
 % Recover C
-C = chol(L,'lower');
-% Update M and S
-M = M*C;
-3DPoints = pinv(C)*S1;
+%C = chol(L,'lower');
+C = sqrtm(L);
 
+Points_3D = pinv(C)*S1;
 
 end

@@ -52,7 +52,7 @@ end
 end
 PT_matrix(:,rows_out)=[];
 %%
-for y=[19 18 17 16 15 14 13 12 11 10 9 8 7 6 ]
+for y=[19 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2]
 matches_image=cell2mat(matches_8pr(y-1));
 matches_prev_image= PT_matrix(y,:);
 for j = 1:length(matches_prev_image)
