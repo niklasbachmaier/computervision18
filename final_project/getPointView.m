@@ -1,6 +1,6 @@
-function [XY_PT_matrix PT_matrix]= getPointView(Matches_8pr)
+function [PT_matrix]= getPointView(matches_8pr)
 PT_matrix=[];
-matches_12 = cell2mat(matches_8pr(1));
+matches_12 = matches_8pr{1,1};
 PT_matrix(1,:)=matches_12(3,:);
 PT_matrix(2,:)=matches_12(6,:);
 
