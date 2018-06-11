@@ -17,7 +17,7 @@ function [Points_3D] = StructureFromMotion(Points_2D)
 % % %load points
 Points = Points_2D;
 % % %Shift the mean of the points to zero using "repmat" command
-shifted_points= Points-repmat(mean(Points,2),1,length(Points));
+shifted_points = Points-repmat(mean(Points,2),1,size(Points,2));
 
 % % %singular value decomposition
 [U,W,V] = svd(shifted_points);
@@ -30,15 +30,17 @@ M = U*sqrt(W);
 S1 = sqrt(W)*V';
 
 % % %solve for affine ambiguity
-A=[M(1,:);M(2,:);M(3,:)];
-L0=eye(3)/pinv(A*A');
+% A=[M(1,:);M(2,:);M(3,:)];
+% L0=eye(3)/pinv(A*A');
 
 % Solve for L
-L = lsqnonlin(@myfun,L0);
+% L = lsqnonlin(@myfun,L0);
 % Recover C
-%C = chol(L,'lower');
-C = sqrtm(L);
+% C = chol(L,'lower');
+%C = sqrtm(L);
 
-Points_3D = pinv(C)*S1;
+%Points_3D = pinv(C)*S1;
+
+Points_3D = S1;
 
 end

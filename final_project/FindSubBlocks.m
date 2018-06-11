@@ -10,7 +10,7 @@ function [Matches, indices] = FindSubBlocks(M,beginframe,endframe,num_im, dim)
 Matches=[];
 indices = [];
 
-startindex = beginframe + (beginframe - 1);
+startindex = beginframe + (beginframe - 1) * (dim - 1);
 endindex = endframe * dim;
 
 %to care for the overlapping case
