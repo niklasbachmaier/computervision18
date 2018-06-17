@@ -12,7 +12,7 @@ for i=1:19
         im = rgb2gray(im); 
     end
     
-    [f, d] = vl_sift(im);
+    [f, d] = vl_sift(im,'Peakthresh',0.03);
     
     frames{i} = f;
     descriptors{i} = d;
@@ -49,7 +49,7 @@ end
 
 %setup for RANSAC
 iter = 100;
-thresh = 3000;
+thresh = 30000;
 
 for i=1:19
     
@@ -80,17 +80,6 @@ PT_matrix = getPointView(matches_8pr);
 
 XY_matrix = getXY(PT_matrix, frames);
 
-%% try out stuff
-
-start_frame = 19;
-end_frame = 21; %use three consecutive frames
-    
-%indices gives the locations of the points contained in submatrix in
-%the original XY_matrix
-[submatrix, indices] = FindSubBlocks(XY_matrix,start_frame,end_frame,19,2);
-    
-%do structure from motion 
-points_3D = StructureFromMotion(submatrix);
 
 %% extract subblocks and do structure from motion
 
@@ -124,17 +113,6 @@ for i=1:19
     
 end
 
-%% try to do a scatterplot of everything in the point-viewset matrix
-figure
-
-for i=1:19
-    
-    [s, ~] = FindSubBlocks(point_viewset,i,i,19,3);
-    
-    scatter3(s(1,:),s(2,:),s(3,:))
-    hold on
-    
-end
 
 %% use procrustes to transform all 3D points to 1 coord system
 %reference coordinate system is the one of the last view (views 19-1-2)
@@ -143,32 +121,44 @@ end
 %it is initialized with the points of the first viewset (1,2,3)
 trans_3D_points = point_viewset(1:3,:);
 
-for i=1:5
+for i=2:13
+    
+    points_next_view = point_viewset((i+(i-1)*2):(i*3),:);
     
     %construct the block to use: it's the transformed 3D points so far and
     %the ones from the next view (i+1) from the point_viewset matrix
-    block = [trans_3D_points; point_viewset((i+(i-1)*2):(i*3),:)];
+    block = [trans_3D_points; points_next_view];
     
-    [submatrix, indices] = FindSubBlocks(block,1,2,19,3); %19 is dummy here, not really used
+    [procr_points, ~] = FindSubBlocks(block,1,2,19,3); %19 is dummy here, not really used
+    i
+    length(procr_points)
     
-    %get the transformation with procrustes
-    points_old_trans = trans_3D_points;
-    points_next_view = point_viewset((i+(i-1)*2):(i*3),:);
+    [~,~,t] = procrustes(procr_points(4:6,:).',procr_points(1:3,:).');
     
-    [~,~,t] = procrustes(points_next_view,points_old_trans);
+    %to get the translation for a single point we take the average of the
+    %translations of the matching points
+    transl = mean(t.c);
+    
+    %repmat translation only where there are points in trans_3D_points
+    transl_add = zeros(3,length(trans_3D_points));
+    [points_3D_iter, ind_3D_iter] = FindSubBlocks(trans_3D_points,1,1,19,3);
+    
+    for m=1:length(ind_3D_iter)   
+        transl_add(:,ind_3D_iter(m)) = transl.';   
+    end
     
     %now transform all the points which are so far in the trans_3D_points;
     %then include all points of the next set in the trans_3D_points; this
     %also overwrites some of the points which were there before but we
     %always prefer the points of the new view because they don't come with
     %a transformation error
-    trans_3D_points = t.b*trans_3D_points*t.T + t.c;
+    trans_3D_points = (t.b*trans_3D_points.'*t.T + transl_add.').';
     
     %insert points from next view
-    [points_nv_iter, ind_iter] = FindSubBlocks(points_next_view,1,1,19,3); %19 is dummy here, not really used
+    [points_nv_iter, ind_nv_iter] = FindSubBlocks(points_next_view,1,1,19,3); %19 is dummy here, not really used
     
-    for m=1:length(ind_iter)   
-        trans_3D_points(:,ind_iter(m)) = points_nv_iter(:,m);   
+    for m=1:length(ind_nv_iter)   
+        trans_3D_points(:,ind_nv_iter(m)) = points_nv_iter(:,m);   
     end
     
 end
@@ -177,6 +167,6 @@ end
 
 [points_3D, ~] = FindSubBlocks(trans_3D_points,1,1,19,3);
 
-scatter3(points_3D(1,:), points_3D(2,:), points_3D(3,:))
+plot3(points_3D(1,:),points_3D(2,:),points_3D(3,:),'*')
 
 %surf(points_3D(1,:), points_3D(2,:), diag(points_3D(3,:)))

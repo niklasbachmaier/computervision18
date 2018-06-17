@@ -32,14 +32,15 @@ S1 = sqrt(W)*V';
 % % %solve for affine ambiguity
 % A=[M(1,:);M(2,:);M(3,:)];
 % L0=eye(3)/pinv(A*A');
-
-% Solve for L
+% 
+% %Solve for L
 % L = lsqnonlin(@myfun,L0);
-% Recover C
-% C = chol(L,'lower');
-%C = sqrtm(L);
-
-%Points_3D = pinv(C)*S1;
+% %Recover C
+% C = nearestSPD(L);
+% 
+% M=M*C;
+% 
+% Points_3D = pinv(C)*S1;
 
 Points_3D = S1;
 
